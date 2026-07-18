@@ -8,8 +8,16 @@ class McpLibraryState {
 	searchQuery = $state('');
 	selectedType = $state<'all' | 'stdio' | 'sse' | 'http'>('all');
 
+	// 마켓 카탈로그(플러그인 marketplaces 폴더에서 자동 감지된 것)는 실제 내 설정이 아니라
+	// "진열대"라서 목록을 오염시킨다. DB는 그대로 두고 화면에서만 숨긴다.
+	visibleMcps = $derived(
+		this.mcps.filter(
+			(m) => !(m.source === 'auto-detected' && (m.sourcePath ?? '').includes('marketplaces'))
+		)
+	);
+
 	filteredMcps = $derived.by(() => {
-		let result = this.mcps;
+		let result = this.visibleMcps;
 
 		if (this.searchQuery) {
 			const query = this.searchQuery.toLowerCase();
@@ -36,12 +44,12 @@ class McpLibraryState {
 
 	mcpCount = $derived.by(() => {
 		let stdio = 0, sse = 0, http = 0;
-		for (const m of this.mcps) {
+		for (const m of this.visibleMcps) {
 			if (m.type === 'stdio') stdio++;
 			else if (m.type === 'sse') sse++;
 			else if (m.type === 'http') http++;
 		}
-		return { total: this.mcps.length, stdio, sse, http };
+		return { total: this.visibleMcps.length, stdio, sse, http };
 	});
 
 	async load() {
